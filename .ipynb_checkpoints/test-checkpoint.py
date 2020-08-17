@@ -3,10 +3,10 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.layers import LSTM, Input, Dense,Embedding, Concatenate, TimeDistributed
 from tensorflow.keras.models import Model,load_model, model_from_json
 from tensorflow.keras.preprocessing.text import one_hot, Tokenizer
-from tensorflow.keras.callbacks import EarlyStopping
 import pickle as pkl
 import numpy as np
 from config import SOURCE_LANGUAGE,TARGET_LANGUAGE
+import sys
 
 # loading the model architecture and asigning the weights
 json_file = open('models/nmt_model-final.json', 'r')
@@ -17,6 +17,10 @@ model_loaded = model_from_json(loaded_model_json, custom_objects={'AttentionLaye
 model_loaded.load_weights("models/nmt_model_weight-final.h5")
 
 # Load pickle data
+
+with open('processed_data/nmt_data.pkl','rb') as f:
+  X_train, y_train, X_test, y_test,max_length_source,max_length_target = pkl.load(f)
+  
 with open('processed_data/nmt_source_tokenizer.pkl','rb') as f:
   vocab_size_source, source_word2index, sourceTokenizer = pkl.load(f)
 
@@ -30,15 +34,22 @@ targetword2index = targetTokenizer.index_word
 latent_dim=500
 # encoder inference
 encoder_inputs = model_loaded.input[0]  #loading encoder_inputs
+# print(model_loaded.input[0])
+# sys.exit()
 encoder_outputs, state_h, state_c = model_loaded.layers[6].output #loading encoder_outputs
 
 encoder_model = Model(inputs=encoder_inputs,outputs=[encoder_outputs, state_h, state_c])
-
+# print(encoder_model.predict(np.array([[56, 66]])))
+# sys.exit()
 # decoder inference
 # Below tensors will hold the states of the previous time step
-decoder_state_input_h = Input(shape=(latent_dim,),name='input_25')
-decoder_state_input_c = Input(shape=(latent_dim,),name='input_17')
+decoder_state_input_h = Input(shape=(latent_dim,),name='input_3')
+decoder_state_input_c = Input(shape=(latent_dim,),name='input_4')
 decoder_hidden_state_input = Input(shape=(32,latent_dim))
+
+# decoder_state_input_h = Input(shape=(latent_dim,))
+# decoder_state_input_c = Input(shape=(latent_dim,))
+# decoder_hidden_state_input = Input(shape=(32,latent_dim))
 
 # Get the embeddings of the decoder sequence
 decoder_inputs = model_loaded.layers[3].output
@@ -71,6 +82,8 @@ decoder_model = Model(
 def decode_sequence(input_seq):
     # Encode the input as state vectors.
     e_out, e_h, e_c = encoder_model.predict(input_seq)
+    
+    # return 'here'
 
     # Generate empty target sequence of length 1.
     target_seq = np.zeros((1,1))
@@ -109,11 +122,12 @@ def decode_sequence(input_seq):
 
 def test_unseen_data(sentence):
     test_source_seq = sourceTokenizer.texts_to_sequences([sentence])
-    
+    return test_source_seq
     prediction = decode_sequence(test_source_seq)
 
     return prediction
 
 
-test = input(f'Enter {SOURCE_LANGUAGE} Sentence: ')
+# test = input(f'Enter {SOURCE_LANGUAGE} Sentence: ')
+test = 'Where are you';
 print(f'Predicted {TARGET_LANGUAGE} Sentence: ',test_unseen_data(test))

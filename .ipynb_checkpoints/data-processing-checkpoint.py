@@ -134,7 +134,8 @@ y_test = pad_sequences(y_test, maxlen = max_length_target, padding='post')
 
 
 with open('processed_data/nmt_data.pkl','wb') as f:
-  pkl.dump([X_train, y_train, X_test, y_test],f)
+  pkl.dump([X_train, y_train, X_test, y_test,max_length_source,max_length_target],f)
+  
 with open('processed_data/nmt_source_tokenizer.pkl','wb') as f:
   pkl.dump([vocab_size_source, source_word2index, sourceTokenizer], f)
 
